@@ -611,9 +611,9 @@
                     <label>2. Indicador Visualizado en el Mapa</label>
                     <select id="selectMetric" onchange="onMetricChange(this.value)">
                         <option value="morosidad_importe">Morosidad en Importe (% Deuda Nominal / Emisión)</option>
-                        <option value="morosidad_cantidad">Morosidad en Cantidad (% Partidas Deuda / Emisión)</option>
+                        <option value="morosidad_cantidad">Morosidad en Cantidad (% Vehículos Deuda / Emisión)</option>
                         <option value="cumplimiento_importe">Cumplimiento en Importe (% Pago en Término / Emisión)</option>
-                        <option value="cumplimiento_cantidad">Cumplimiento en Cantidad (% Partidas en Término / Emisión)</option>
+                        <option value="cumplimiento_cantidad">Cumplimiento en Cantidad (% Vehículos en Término / Emisión)</option>
                     </select>
                 </div>
 
@@ -665,8 +665,8 @@
                 <div class="kpi-value" id="kpi_mor_cant_pct">--%</div>
                 <div class="kpi-formula">Partidas Deuda Admin. / Partidas Emisión</div>
                 <div class="kpi-sub" id="kpi_mor_cant_detail">
-                    Partidas con Deuda: --<br>
-                    Partidas Emitidas: --
+                    Vehículos con Deuda: --<br>
+                    Vehículos Emitidas: --
                 </div>
             </div>
 
@@ -693,8 +693,8 @@
                 <div class="kpi-value" id="kpi_cump_cant_pct">--%</div>
                 <div class="kpi-formula">Partidas en Término / Partidas Emisión</div>
                 <div class="kpi-sub" id="kpi_cump_cant_detail">
-                    Partidas en Término: --<br>
-                    Partidas Fuera Término: --
+                    Vehículos en Término: --<br>
+                    Vehículos Fuera Término: --
                 </div>
             </div>
         </div>
@@ -756,9 +756,9 @@
                             <tr>
                                 <th onclick="sortTable('name')" id="th_name">Comuna / Barrio ↕</th>
                                 <th onclick="sortTable('morosidad_importe')" title="Importe Deuda Nominal / Importe Emisión">Moros. $ (%) ↕</th>
-                                <th onclick="sortTable('morosidad_cantidad')" title="Partidas Deuda Admin. / Partidas Emisión">Moros. Cant (%) ↕</th>
+                                <th onclick="sortTable('morosidad_cantidad')" title=" Deuda Admin. / Emisión">Moros. Cant (%) ↕</th>
                                 <th onclick="sortTable('cumplimiento_importe')" title="Importe Pago en Término / Importe Emisión">Cumpl. $ (%) ↕</th>
-                                <th onclick="sortTable('cumplimiento_cantidad')" title="Partidas en Término / Partidas Emisión">Cumpl. Cant (%) ↕</th>
+                                <th onclick="sortTable('cumplimiento_cantidad')" title="Vehículos en Término / Emisión">Cumpl. Cant (%) ↕</th>
                                 <th onclick="sortTable('emision_cant')">Part. Emisión ↕</th>
                                 <th onclick="sortTable('deuda_cant')">Part. Deuda ↕</th>
                                 <th onclick="sortTable('emision_imp')">Emisión ($ Millones) ↕</th>
@@ -955,15 +955,15 @@
                     </div>
                     <hr style="border:none; border-top:1px solid #E3EAEC; margin:6px 0;">
                     <div class="info-metric-row">
-                        <span>Partidas Emisión:</span>
+                        <span>Emisión:</span>
                         <span>${fmtInt.format(entity.emision_cant)}</span>
                     </div>
                     <div class="info-metric-row">
-                        <span>Partidas en Término:</span>
+                        <span>Vehículos en Término:</span>
                         <span>${fmtInt.format(entity.termino_cant)}</span>
                     </div>
                     <div class="info-metric-row">
-                        <span>Partidas Deuda Admin.:</span>
+                        <span>Vehículos Deuda Admin.:</span>
                         <span>${fmtInt.format(entity.deuda_cant)}</span>
                     </div>
                     <div class="info-metric-row">
@@ -1124,8 +1124,8 @@
 
             document.getElementById('kpi_mor_cant_pct').textContent = fmtPct(target.morosidad_cantidad);
             document.getElementById('kpi_mor_cant_detail').innerHTML = `
-                <b>Partidas Deuda:</b> ${fmtInt.format(target.deuda_cant)}<br>
-                <b>Partidas Emisión:</b> ${fmtInt.format(target.emision_cant)}<br>
+                <b>Vehículos Deuda:</b> ${fmtInt.format(target.deuda_cant)}<br>
+                <b>Emisión:</b> ${fmtInt.format(target.emision_cant)}<br>
                 <span style="color:var(--text-muted); font-size:11px;">Ámbito: ${scopeNote}</span>
             `;
 
@@ -1138,8 +1138,8 @@
 
             document.getElementById('kpi_cump_cant_pct').textContent = fmtPct(target.cumplimiento_cantidad);
             document.getElementById('kpi_cump_cant_detail').innerHTML = `
-                <b>Partidas en Término:</b> ${fmtInt.format(target.termino_cant)}<br>
-                <b>Partidas Fuera Térm.:</b> ${fmtInt.format(target.fuera_cant)}<br>
+                <b>Vehículos en Término:</b> ${fmtInt.format(target.termino_cant)}<br>
+                <b>Vehículos Fuera Térm.:</b> ${fmtInt.format(target.fuera_cant)}<br>
                 <span style="color:var(--text-muted); font-size:11px;">Ámbito: ${scopeNote}</span>
             `;
 
