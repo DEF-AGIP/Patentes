@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero de Morosidad y Cumplimiento - CABA</title>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --primary-dark: #1E3A40;
+            --primary: #2C4E55;
+            --primary-med: #4C858D;
+            --primary-light: #73D7D8;
+            --accent: #FFB703;
+            --danger: #D94848;
+            --success: #2A9D8F;
+            --bg: #F3F6F8;
+            --card-bg: #FFFFFF;
+            --text: #1B2C30;
+            --text-muted: #5C7075;
+            --border: #DCE4E7;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            color: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-inner {
+            max-width: 1720px;
+            width: 97%;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 21px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .brand p {
+            margin: 3px 0 0;
+            font-size: 13px;
+            opacity: 0.88;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.18s ease;
+            text-decoration: none;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: #1B2C30;
+        }
+        .btn-accent:hover {
+            background: #ffca3a;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-light {
+            background: rgba(255,255,255,0.12);
+            color: white;
+            border-color: rgba(255,255,255,0.28);
+        }
+        .btn-outline-light:hover {
+            background: rgba(255,255,255,0.22);
+        }
+
+        .status-badge {
+            font-size: 12px;
+            background: rgba(115, 215, 216, 0.2);
+            border: 1px solid rgba(115, 215, 216, 0.5);
+            color: #E2FAFA;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1720px;
+            width: 97%;
+            margin: 18px auto 36px;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Control Panel */
+        .controls-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .controls-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .segmented-control {
+            display: flex;
+            background: #EBF0F2;
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .segmented-control button {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 7px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .segmented-control button.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        }
+
+        select, input[type="text"] {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 13.5px;
+            color: var(--text);
+            background: white;
+            font-weight: 500;
+            outline: none;
+        }
+
+        select:focus, input[type="text"]:focus {
+            border-color: var(--primary-med);
+            box-shadow: 0 0 0 2px rgba(76, 133, 141, 0.18);
+        }
+
+        /* Cuota Pills Bar */
+        .cuotas-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            padding-top: 8px;
+            border-top: 1px solid #EEF2F4;
+        }
+
+        .cuotas-bar-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-right: 6px;
+            text-transform: uppercase;
+        }
+
+        .cuota-pill {
+            border: 1px solid var(--border);
+            background: #F8FAFB;
+            color: var(--text);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .cuota-pill:hover {
+            border-color: var(--primary-med);
+            background: #EBF4F5;
+        }
+
+        .cuota-pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.18s ease;
+            position: relative;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+
+        .kpi-card.active-metric {
+            border-left-color: var(--accent);
+            background: linear-gradient(to right, rgba(255, 183, 3, 0.06), #FFFFFF 35%);
+            box-shadow: 0 4px 15px rgba(44, 78, 85, 0.12);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .kpi-title {
+            font-size: 12.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        .kpi-badge {
+            font-size: 10.5px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+            background: #EBF0F2;
+            color: var(--primary);
+        }
+
+        .kpi-card.active-metric .kpi-badge {
+            background: var(--accent);
+            color: #1B2C30;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin: 2px 0 6px;
+            line-height: 1.1;
+        }
+
+        .kpi-formula {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .kpi-sub {
+            font-size: 12px;
+            color: var(--text);
+            background: #F5F8F9;
+            padding: 7px 10px;
+            border-radius: 6px;
+            line-height: 1.45;
+        }
+
+        /* Map + Side Panel Layout */
+        .workspace-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .workspace-grid.split-mode {
+            display: grid;
+            grid-template-columns: 1.55fr 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        @media (max-width: 1100px) {
+            .workspace-grid.split-mode {
+                display: flex;
+                flex-direction: column;
+            }
+        }
+
+        .panel-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .panel-subtitle {
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        #map {
+            height: 780px;
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #E8F1F4;
+            transition: height 0.2s ease;
+        }
+
+        /* Modo Pantalla Completa para el Mapa */
+        .panel-card.map-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 3000 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 16px 24px !important;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            background: #FFFFFF;
+        }
+
+        .panel-card.map-fullscreen #map {
+            flex: 1;
+            height: 100% !important;
+            border-radius: 8px;
+        }
+
+        /* Leaflet Overlays */
+        .info-box {
+            padding: 12px 15px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+            border-radius: 10px;
+            line-height: 1.45;
+            min-width: 245px;
+            max-width: 310px;
+            border: 1px solid var(--border);
+        }
+
+        .info-box h4 {
+            margin: 0 0 6px;
+            color: var(--primary-dark);
+            font-size: 15px;
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 4px;
+        }
+
+        .info-metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-size: 12.5px;
+        }
+
+        .info-metric-row.highlight {
+            background: #EEF7F8;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.96);
+            padding: 12px 14px;
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+            font-size: 12.5px;
+            line-height: 22px;
+            border: 1px solid var(--border);
+        }
+
+        .legend-title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+            font-size: 12.5px;
+        }
+
+        .legend i {
+            width: 16px;
+            height: 16px;
+            float: left;
+            margin-right: 8px;
+            margin-top: 3px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.15);
+        }
+
+        .map-polygon-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            text-align: center;
+            pointer-events: none;
+            line-height: 1.1;
+        }
+
+        /* Table Styles */
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .table-wrapper {
+            max-height: 575px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: var(--primary);
+            color: white;
+            padding: 10px 8px;
+            text-align: right;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            z-index: 2;
+        }
+
+        thead th:first-child {
+            text-align: left;
+        }
+
+        thead th:hover {
+            background: var(--primary-dark);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #EDF1F3;
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        tbody tr:hover {
+            background: #EBF5F6;
+        }
+
+        tbody tr.selected-row {
+            background: #FFF3CD !important;
+            font-weight: 600;
+        }
+
+        tbody td {
+            padding: 8px 8px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        tbody td:first-child {
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        tfoot td {
+            position: sticky;
+            bottom: 0;
+            background: #E9F0F2;
+            font-weight: 700;
+            padding: 9px 8px;
+            text-align: right;
+            border-top: 2px solid var(--primary);
+        }
+
+        tfoot td:first-child {
+            text-align: left;
+        }
+
+        .pill-pct {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 11.5px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <div class="brand">
+                <h1>Ciudad Autónoma de Buenos Aires — Morosidad y Cumplimiento</h1>
+                <p>Tablero Interactivo de Emisión, Pago en Término y Deuda Administrativa por Comuna y Barrio</p>
+            </div>
+            <div class="header-actions">
+                <span id="dataSourceBadge" class="status-badge">📊 Datos: Base Oficial 2026 (Cuotas 1 a 11)</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Barra de Filtros Interactivos -->
+        <div class="controls-card">
+            <div class="controls-row">
+                <!-- Nivel Geográfico -->
+                <div class="control-group">
+                    <label>1. Nivel Geográfico en Mapa</label>
+                    <div class="segmented-control">
+                        <button id="btnViewComuna" class="active" onclick="setGeoLevel('comuna')">Por Comuna (15)</button>
+                        <button id="btnViewBarrio" onclick="setGeoLevel('barrio')">Por Barrio (48)</button>
+                    </div>
+                </div>
+
+                <!-- Indicador Principal -->
+                <div class="control-group">
+                    <label>2. Indicador Visualizado en el Mapa</label>
+                    <select id="selectMetric" onchange="onMetricChange(this.value)">
+                        <option value="morosidad_importe">Morosidad en Importe (% Deuda Nominal / Emisión)</option>
+                        <option value="morosidad_cantidad">Morosidad en Cantidad (% Partidas Deuda / Emisión)</option>
+                        <option value="cumplimiento_importe">Cumplimiento en Importe (% Pago en Término / Emisión)</option>
+                        <option value="cumplimiento_cantidad">Cumplimiento en Cantidad (% Partidas en Término / Emisión)</option>
+                    </select>
+                </div>
+
+                <!-- Filtro de Cuota -->
+                <div class="control-group">
+                    <label>3. Selección de Cuota</label>
+                    <select id="selectCuota" onchange="onCuotaSelectChange(this.value)">
+                        <option value="ALL">Todas las Cuotas (Acumulado)</option>
+                    </select>
+                </div>
+
+                <!-- Filtro de Comuna / Zoom -->
+                <div class="control-group">
+                    <label>4. Filtrar / Enfocar Comuna</label>
+                    <select id="selectComunaFilter" onchange="onComunaFilterChange(this.value)">
+                        <option value="ALL">Todas las Comunas (CABA completa)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Botonera rápida de Cuotas -->
+            <div class="cuotas-bar" id="cuotasPillContainer">
+                <span class="cuotas-bar-label">Acceso Rápido Cuota:</span>
+            </div>
+        </div>
+
+        <!-- Tarjetas de Indicadores (KPIs) -->
+        <div class="kpi-grid">
+            <!-- Card 1: Morosidad en Importe -->
+            <div class="kpi-card active-metric" id="card_morosidad_importe" onclick="onMetricChange('morosidad_importe')">
+                <div class="kpi-header">
+                    <span class="kpi-title">Morosidad en Importe</span>
+                    <span class="kpi-badge">Mapa Activo</span>
+                </div>
+                <div class="kpi-value" id="kpi_mor_imp_pct">--%</div>
+                <div class="kpi-formula">Deuda Admin. Nominal / Emisión</div>
+                <div class="kpi-sub" id="kpi_mor_imp_detail">
+                    Deuda Nominal: --<br>
+                    Emisión: --
+                </div>
+            </div>
+
+            <!-- Card 2: Morosidad en Cantidad -->
+            <div class="kpi-card" id="card_morosidad_cantidad" onclick="onMetricChange('morosidad_cantidad')">
+                <div class="kpi-header">
+                    <span class="kpi-title">Morosidad en Cantidad</span>
+                    <span class="kpi-badge">Ver en Mapa</span>
+                </div>
+                <div class="kpi-value" id="kpi_mor_cant_pct">--%</div>
+                <div class="kpi-formula">Partidas Deuda Admin. / Partidas Emisión</div>
+                <div class="kpi-sub" id="kpi_mor_cant_detail">
+                    Partidas con Deuda: --<br>
+                    Partidas Emitidas: --
+                </div>
+            </div>
+
+            <!-- Card 3: Cumplimiento en Importe -->
+            <div class="kpi-card" id="card_cumplimiento_importe" onclick="onMetricChange('cumplimiento_importe')">
+                <div class="kpi-header">
+                    <span class="kpi-title">Cumplimiento en Importe</span>
+                    <span class="kpi-badge">Ver en Mapa</span>
+                </div>
+                <div class="kpi-value" id="kpi_cump_imp_pct">--%</div>
+                <div class="kpi-formula">Pago en Término ($) / Emisión ($)</div>
+                <div class="kpi-sub" id="kpi_cump_imp_detail">
+                    Pago en Término: --<br>
+                    Fuera de Término: --
+                </div>
+            </div>
+
+            <!-- Card 4: Cumplimiento en Cantidad -->
+            <div class="kpi-card" id="card_cumplimiento_cantidad" onclick="onMetricChange('cumplimiento_cantidad')">
+                <div class="kpi-header">
+                    <span class="kpi-title">Cumplimiento en Cantidad</span>
+                    <span class="kpi-badge">Ver en Mapa</span>
+                </div>
+                <div class="kpi-value" id="kpi_cump_cant_pct">--%</div>
+                <div class="kpi-formula">Partidas en Término / Partidas Emisión</div>
+                <div class="kpi-sub" id="kpi_cump_cant_detail">
+                    Partidas en Término: --<br>
+                    Partidas Fuera Término: --
+                </div>
+            </div>
+        </div>
+
+        <!-- Mapa Interactivo + Tabla de Datos -->
+        <div class="workspace-grid" id="workspaceGrid">
+            <!-- Panel del Mapa CABA (Amplitud Total por defecto para máximo espacio) -->
+            <div class="panel-card" id="mapCard">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title" id="mapPanelTitle">Mapa Interactivo de CABA — Por Comuna</h2>
+                        <span class="panel-subtitle" id="mapPanelSubtitle">Haz clic en un polígono para fijar su detalle o hacer zoom</span>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <!-- Selector de Disposición -->
+                        <div class="segmented-control" style="background:#EBF0F2;">
+                            <button id="btnLayoutFull" class="active" onclick="setMapLayout('full')" title="Mapa en ancho total de la pantalla (máximo espacio)">🗺️ Ancho Total</button>
+                            <button id="btnLayoutSplit" onclick="setMapLayout('split')" title="Mapa y Tabla en paralelo">◫ Dividido</button>
+                        </div>
+
+                        <!-- Selector de Altura del Mapa -->
+                        <div style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-muted);">
+                            <span>Alto:</span>
+                            <button class="cuota-pill btn-height" data-height="650" onclick="setMapHeight(650)">650px</button>
+                            <button class="cuota-pill btn-height active" data-height="780" onclick="setMapHeight(780)">780px</button>
+                            <button class="cuota-pill btn-height" data-height="920" onclick="setMapHeight(920)">920px</button>
+                        </div>
+
+                        <label style="font-size:12.5px; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                            <input type="checkbox" id="chkShowLabels" checked onchange="renderMap()"> Etiquetas
+                        </label>
+
+                        <button class="btn" style="background:#EBF0F2; color:var(--primary-dark); padding:5px 10px; font-size:12px;" onclick="resetMapView()">
+                            🔄 Centrar CABA
+                        </button>
+
+                        <button class="btn" id="btnFullscreenMap" style="background:#EBF0F2; color:var(--primary-dark); padding:5px 10px; font-size:12px;" onclick="toggleFullscreenMap()">
+                            ⛶ Pantalla Completa
+                        </button>
+                    </div>
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <!-- Panel Derecho: Tabla de Ranking y Detalle -->
+            <div class="panel-card">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title" id="tablePanelTitle">Desglose por Comuna</h2>
+                        <span class="panel-subtitle" id="tableScopeLabel">Haz clic en los encabezados para ordenar</span>
+                    </div>
+                </div>
+                <div class="table-controls">
+                    <input type="text" id="searchInput" placeholder="🔍 Buscar barrio o comuna..." oninput="renderTable()" style="flex:1; min-width:180px;">
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('name')" id="th_name">Comuna / Barrio ↕</th>
+                                <th onclick="sortTable('morosidad_importe')" title="Importe Deuda Nominal / Importe Emisión">Moros. $ (%) ↕</th>
+                                <th onclick="sortTable('morosidad_cantidad')" title="Partidas Deuda Admin. / Partidas Emisión">Moros. Cant (%) ↕</th>
+                                <th onclick="sortTable('cumplimiento_importe')" title="Importe Pago en Término / Importe Emisión">Cumpl. $ (%) ↕</th>
+                                <th onclick="sortTable('cumplimiento_cantidad')" title="Partidas en Término / Partidas Emisión">Cumpl. Cant (%) ↕</th>
+                                <th onclick="sortTable('emision_cant')">Part. Emisión ↕</th>
+                                <th onclick="sortTable('deuda_cant')">Part. Deuda ↕</th>
+                                <th onclick="sortTable('emision_imp')">Emisión ($ Millones) ↕</th>
+                                <th onclick="sortTable('deuda_nom')">Deuda Nominal ($ Millones) ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                        <tfoot id="tableFoot"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bundle de GeoJSON (Comunas + Barrios) y CSV base -->
+    <script src="data_bundle.js"></script>
+
+    <script>
+        // Estado global de la aplicación
+        let rawRows = [];
+        let currentCSVText = "";
+        let state = {
+            geoLevel: 'comuna',          // 'comuna' | 'barrio'
+            metric: 'morosidad_importe', // 'morosidad_importe' | 'morosidad_cantidad' | 'cumplimiento_importe' | 'cumplimiento_cantidad'
+            cuota: 'ALL',                // 'ALL' o número de cuota
+            comunaFilter: 'ALL',         // 'ALL' o número de comuna (1..15)
+            selectedEntityKey: null,     // Comuna ID o Barrio normalizado seleccionado
+            sortBy: 'morosidad_importe',
+            sortDesc: true
+        };
+
+        const METRIC_CONFIG = {
+            morosidad_importe: {
+                label: 'Morosidad en Importe',
+                shortLabel: 'Morosidad ($)',
+                formula: 'Importe Deuda Nominal / Importe Emisión',
+                palette: ['#73D7D8', '#4C858D', '#2C4E55', '#1B2C30'],
+                thresholdsComuna: [0.16, 0.20, 0.25],
+                thresholdsBarrio: [0.16, 0.20, 0.25]
+            },
+            morosidad_cantidad: {
+                label: 'Morosidad en Cantidad',
+                shortLabel: 'Morosidad (Cant.)',
+                formula: 'Cantidad Partidas Deuda Administrativa / Cantidad Partidas Emisión',
+                palette: ['#73D7D8', '#4C858D', '#2C4E55', '#1B2C30'],
+                thresholdsComuna: [0.22, 0.27, 0.33],
+                thresholdsBarrio: [0.22, 0.27, 0.33]
+            },
+            cumplimiento_importe: {
+                label: 'Cumplimiento en Importe',
+                shortLabel: 'Cumplimiento ($)',
+                formula: 'Importe Pagos en Término / Importe Emisión',
+                palette: ['#D9ED92', '#76C893', '#34A0A4', '#168AAD'],
+                thresholdsComuna: [0.65, 0.72, 0.78],
+                thresholdsBarrio: [0.65, 0.72, 0.78]
+            },
+            cumplimiento_cantidad: {
+                label: 'Cumplimiento en Cantidad',
+                shortLabel: 'Cumplimiento (Cant.)',
+                formula: 'Cantidad Partidas en Término / Cantidad Partidas Emisión',
+                palette: ['#D9ED92', '#76C893', '#34A0A4', '#168AAD'],
+                thresholdsComuna: [0.62, 0.70, 0.76],
+                thresholdsBarrio: [0.62, 0.70, 0.76]
+            }
+        };
+
+        // Normalización de nombres de barrios para cruzar 100% entre CSV y GeoJSON oficial de CABA
+        function normalizeBarrioName(name) {
+            if (!name) return '-';
+            let s = String(name).trim().toUpperCase();
+            if (s === '-' || s === '' || s === 'SIN ASIGNAR') return '-';
+            s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (s === 'LA BOCA') s = 'BOCA';
+            if (s === 'MONSERRAT') s = 'MONTSERRAT';
+            if (s === 'VILLA GRAL. MITRE' || s === 'VILLA GRAL MITRE') s = 'VILLA GENERAL MITRE';
+            return s;
+        }
+
+        function parseNum(val) {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            if (!val) return 0;
+            let s = String(val).trim();
+            if (!s || s === '-') return 0;
+            // Soportar tanto formato estándar (1234.56) como formato local si lo hubiera
+            if (s.includes(',') && s.includes('.')) {
+                if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+                    s = s.replace(/\./g, '').replace(',', '.');
+                } else {
+                    s = s.replace(/,/g, '');
+                }
+            } else if (s.includes(',') && !s.includes('.')) {
+                s = s.replace(',', '.');
+            }
+            let n = parseFloat(s);
+            return isNaN(n) ? 0 : n;
+        }
+
+        // Parseo de CSV a objetos normalizados
+        function parseCSVText(csvText) {
+            const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            if (lines.length < 2) return [];
+            const sep = lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',';
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(sep);
+                if (cols.length < 13) continue;
+                const anio = cols[0].trim();
+                const cuota = parseInt(cols[1].trim(), 10);
+                const comunaRaw = cols[2].trim();
+                const comuna = (comunaRaw === '-' || comunaRaw === '') ? '-' : String(parseInt(comunaRaw, 10));
+                const barrioRaw = cols[3].trim();
+                const barrioNorm = normalizeBarrioName(barrioRaw);
+
+                rows.push({
+                    anio: anio,
+                    cuota: isNaN(cuota) ? cols[1].trim() : cuota,
+                    comuna: comuna,
+                    barrioDisplay: barrioRaw === '-' ? 'Sin asignar (-)' : barrioRaw,
+                    barrioNorm: barrioNorm,
+                    emision_cant: parseNum(cols[4]),
+                    emision_imp: parseNum(cols[5]),
+                    termino_cant: parseNum(cols[6]),
+                    termino_imp: parseNum(cols[7]),
+                    fuera_cant: parseNum(cols[8]),
+                    fuera_imp: parseNum(cols[9]),
+                    intereses_imp: parseNum(cols[10]),
+                    deuda_cant: parseNum(cols[11]),
+                    deuda_nom: parseNum(cols[12]),
+                    deuda_act: parseNum(cols[13])
+                });
+            }
+            return rows;
+        }
+
+        // Formateadores
+        const fmtInt = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
+        const fmtPct = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
+
+        // Formateador que SIEMPRE expresa el importe en millones de pesos ($ M)
+        function formatMillonesARS(val) {
+            if (val === undefined || val === null || isNaN(val)) return '$ 0,00 M';
+            const millones = val / 1000000;
+            return '$ ' + millones.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' M';
+        }
+
+        // Inicialización del Mapa Leaflet
+        let map, geojsonLayer, labelsLayer, infoControl, legendControl;
+
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([-34.615, -58.445], 12);
+
+            labelsLayer = L.layerGroup().addTo(map);
+
+            infoControl = L.control({ position: 'topright' });
+            infoControl.onAdd = function () {
+                this._div = L.DomUtil.create('div', 'info-box');
+                this.update();
+                return this._div;
+            };
+            infoControl.update = function (entity) {
+                if (!entity) {
+                    const cuotaTxt = state.cuota === 'ALL' ? 'Todas las cuotas (Acum.)' : 'Cuota ' + state.cuota;
+                    this._div.innerHTML = `
+                        <h4>Detalle en el Mapa</h4>
+                        <div style="color:var(--text-muted); font-size:12.5px;">
+                            Pasa el cursor o haz clic sobre una <b>${state.geoLevel === 'comuna' ? 'Comuna' : 'Barrio'}</b> para inspeccionar sus indicadores.<br>
+                            <span style="display:inline-block; margin-top:6px; font-weight:600; color:var(--primary);">Filtro activo: ${cuotaTxt}</span>
+                        </div>
+                    `;
+                    return;
+                }
+                const m = state.metric;
+                this._div.innerHTML = `
+                    <h4>${entity.title}</h4>
+                    ${entity.subtitle ? `<div style="font-size:11.5px; color:var(--text-muted); margin-bottom:6px;">${entity.subtitle}</div>` : ''}
+                    <div class="info-metric-row ${m === 'morosidad_importe' ? 'highlight' : ''}">
+                        <span>Morosidad Importe:</span>
+                        <strong>${fmtPct(entity.morosidad_importe)}</strong>
+                    </div>
+                    <div class="info-metric-row ${m === 'morosidad_cantidad' ? 'highlight' : ''}">
+                        <span>Morosidad Cantidad:</span>
+                        <strong>${fmtPct(entity.morosidad_cantidad)}</strong>
+                    </div>
+                    <div class="info-metric-row ${m === 'cumplimiento_importe' ? 'highlight' : ''}">
+                        <span>Cumplimiento Importe:</span>
+                        <strong>${fmtPct(entity.cumplimiento_importe)}</strong>
+                    </div>
+                    <div class="info-metric-row ${m === 'cumplimiento_cantidad' ? 'highlight' : ''}">
+                        <span>Cumplimiento Cantidad:</span>
+                        <strong>${fmtPct(entity.cumplimiento_cantidad)}</strong>
+                    </div>
+                    <hr style="border:none; border-top:1px solid #E3EAEC; margin:6px 0;">
+                    <div class="info-metric-row">
+                        <span>Partidas Emisión:</span>
+                        <span>${fmtInt.format(entity.emision_cant)}</span>
+                    </div>
+                    <div class="info-metric-row">
+                        <span>Partidas en Término:</span>
+                        <span>${fmtInt.format(entity.termino_cant)}</span>
+                    </div>
+                    <div class="info-metric-row">
+                        <span>Partidas Deuda Admin.:</span>
+                        <span>${fmtInt.format(entity.deuda_cant)}</span>
+                    </div>
+                    <div class="info-metric-row">
+                        <span>Importe Emisión:</span>
+                        <span>${formatMillonesARS(entity.emision_imp)}</span>
+                    </div>
+                    <div class="info-metric-row">
+                        <span>Deuda Nominal:</span>
+                        <span>${formatMillonesARS(entity.deuda_nom)}</span>
+                    </div>
+                `;
+            };
+            infoControl.addTo(map);
+
+            legendControl = L.control({ position: 'bottomright' });
+            legendControl.onAdd = function () {
+                this._div = L.DomUtil.create('div', 'legend');
+                return this._div;
+            };
+            legendControl.addTo(map);
+        }
+
+        // Cálculo de métricas agregadas
+        function computeMetrics(agg) {
+            agg.morosidad_cantidad = agg.emision_cant > 0 ? (agg.deuda_cant / agg.emision_cant) : 0;
+            agg.morosidad_importe = agg.emision_imp > 0 ? (agg.deuda_nom / agg.emision_imp) : 0;
+            agg.cumplimiento_cantidad = agg.emision_cant > 0 ? (agg.termino_cant / agg.emision_cant) : 0;
+            agg.cumplimiento_importe = agg.emision_imp > 0 ? (agg.termino_imp / agg.emision_imp) : 0;
+            return agg;
+        }
+
+        function createEmptyAgg(key, name, comuna, subtitle) {
+            return {
+                key,
+                name,
+                title: name,
+                subtitle: subtitle || '',
+                comuna: comuna || '-',
+                emision_cant: 0,
+                emision_imp: 0,
+                termino_cant: 0,
+                termino_imp: 0,
+                fuera_cant: 0,
+                fuera_imp: 0,
+                intereses_imp: 0,
+                deuda_cant: 0,
+                deuda_nom: 0,
+                deuda_act: 0
+            };
+        }
+
+        function accumulateRow(target, r) {
+            target.emision_cant += r.emision_cant;
+            target.emision_imp += r.emision_imp;
+            target.termino_cant += r.termino_cant;
+            target.termino_imp += r.termino_imp;
+            target.fuera_cant += r.fuera_cant;
+            target.fuera_imp += r.fuera_imp;
+            target.intereses_imp += r.intereses_imp;
+            target.deuda_cant += r.deuda_cant;
+            target.deuda_nom += r.deuda_nom;
+            target.deuda_act += r.deuda_act;
+        }
+
+        // Filtrar filas según Cuota y Comuna seleccionadas
+        function getFilteredRows() {
+            return rawRows.filter(r => {
+                if (state.cuota !== 'ALL' && String(r.cuota) !== String(state.cuota)) return false;
+                if (state.comunaFilter !== 'ALL' && String(r.comuna) !== String(state.comunaFilter)) return false;
+                return true;
+            });
+        }
+
+        // Agregar datos por Comuna o por Barrio
+        function getAggregatedData() {
+            const rows = getFilteredRows();
+            const mapAgg = {};
+            const totalAgg = createEmptyAgg('TOTAL', 'Total Selección', '');
+
+            const comunaBarriosDesc = {};
+            if (window.COMUNAS_GEOJSON) {
+                window.COMUNAS_GEOJSON.features.forEach(f => {
+                    const cid = String(Math.round(f.properties.COMUNAS));
+                    comunaBarriosDesc[cid] = f.properties.BARRIOS;
+                });
+            }
+
+            rows.forEach(r => {
+                accumulateRow(totalAgg, r);
+                if (state.geoLevel === 'comuna') {
+                    const key = r.comuna;
+                    if (!mapAgg[key]) {
+                        const label = key === '-' ? 'Sin asignar (-)' : `Comuna ${key}`;
+                        const sub = key === '-' ? 'Partidas sin comuna asignada' : `Barrios: ${comunaBarriosDesc[key] || ''}`;
+                        mapAgg[key] = createEmptyAgg(key, label, key, sub);
+                    }
+                    accumulateRow(mapAgg[key], r);
+                } else {
+                    const key = r.barrioNorm;
+                    if (!mapAgg[key]) {
+                        const label = key === '-' ? 'Sin asignar (-)' : r.barrioDisplay;
+                        const sub = r.comuna === '-' ? 'Sin comuna asignada' : `Comuna ${r.comuna}`;
+                        mapAgg[key] = createEmptyAgg(key, label, r.comuna, sub);
+                    }
+                    accumulateRow(mapAgg[key], r);
+                }
+            });
+
+            Object.values(mapAgg).forEach(computeMetrics);
+            computeMetrics(totalAgg);
+            return { mapAgg, totalAgg };
+        }
+
+        // Escala de color dinámica por cuartiles / umbrales
+        function computeDynamicThresholds(values, metricKey) {
+            const clean = values.filter(v => typeof v === 'number' && !isNaN(v) && v > 0).sort((a, b) => a - b);
+            if (clean.length < 4) {
+                return METRIC_CONFIG[metricKey].thresholdsComuna;
+            }
+            const q1 = clean[Math.floor(clean.length * 0.25)];
+            const q2 = clean[Math.floor(clean.length * 0.50)];
+            const q3 = clean[Math.floor(clean.length * 0.75)];
+            return [q1, q2, q3];
+        }
+
+        function getColorForValue(val, thresholds, palette) {
+            if (val === undefined || val === null || isNaN(val)) return '#D3DCE0';
+            if (val <= thresholds[0]) return palette[0];
+            if (val <= thresholds[1]) return palette[1];
+            if (val <= thresholds[2]) return palette[2];
+            return palette[3];
+        }
+
+        function getTextColorForBg(val, thresholds, metricKey) {
+            if (metricKey.startsWith('cumplimiento')) {
+                return val > thresholds[1] ? '#FFFFFF' : '#1B2C30';
+            }
+            return val > thresholds[0] ? '#FFFFFF' : '#1B2C30';
+        }
+
+        // Actualizar Tarjetas KPI Superiores
+        function updateKPICards(totalAgg, mapAgg) {
+            let target = totalAgg;
+            let scopeNote = state.cuota === 'ALL' ? 'Acumulado Todas las Cuotas' : `Cuota ${state.cuota}`;
+            if (state.selectedEntityKey && mapAgg[state.selectedEntityKey]) {
+                target = mapAgg[state.selectedEntityKey];
+                scopeNote = `${target.title} (${scopeNote})`;
+            } else if (state.comunaFilter !== 'ALL') {
+                scopeNote = `Comuna ${state.comunaFilter} (${scopeNote})`;
+            }
+
+            document.getElementById('kpi_mor_imp_pct').textContent = fmtPct(target.morosidad_importe);
+            document.getElementById('kpi_mor_imp_detail').innerHTML = `
+                <b>Deuda Nominal:</b> ${formatMillonesARS(target.deuda_nom)}<br>
+                <b>Emisión:</b> ${formatMillonesARS(target.emision_imp)}<br>
+                <span style="color:var(--text-muted); font-size:11px;">Deuda Actualizada: ${formatMillonesARS(target.deuda_act)}</span>
+            `;
+
+            document.getElementById('kpi_mor_cant_pct').textContent = fmtPct(target.morosidad_cantidad);
+            document.getElementById('kpi_mor_cant_detail').innerHTML = `
+                <b>Partidas Deuda:</b> ${fmtInt.format(target.deuda_cant)}<br>
+                <b>Partidas Emisión:</b> ${fmtInt.format(target.emision_cant)}<br>
+                <span style="color:var(--text-muted); font-size:11px;">Ámbito: ${scopeNote}</span>
+            `;
+
+            document.getElementById('kpi_cump_imp_pct').textContent = fmtPct(target.cumplimiento_importe);
+            document.getElementById('kpi_cump_imp_detail').innerHTML = `
+                <b>Pago en Término:</b> ${formatMillonesARS(target.termino_imp)}<br>
+                <b>Fuera de Término:</b> ${formatMillonesARS(target.fuera_imp)}<br>
+                <span style="color:var(--text-muted); font-size:11px;">Intereses: ${formatMillonesARS(target.intereses_imp)}</span>
+            `;
+
+            document.getElementById('kpi_cump_cant_pct').textContent = fmtPct(target.cumplimiento_cantidad);
+            document.getElementById('kpi_cump_cant_detail').innerHTML = `
+                <b>Partidas en Término:</b> ${fmtInt.format(target.termino_cant)}<br>
+                <b>Partidas Fuera Térm.:</b> ${fmtInt.format(target.fuera_cant)}<br>
+                <span style="color:var(--text-muted); font-size:11px;">Ámbito: ${scopeNote}</span>
+            `;
+
+            // Resaltar tarjeta activa
+            ['morosidad_importe', 'morosidad_cantidad', 'cumplimiento_importe', 'cumplimiento_cantidad'].forEach(m => {
+                const card = document.getElementById('card_' + m);
+                const badge = card.querySelector('.kpi-badge');
+                if (m === state.metric) {
+                    card.classList.add('active-metric');
+                    badge.textContent = 'Mapa Activo';
+                } else {
+                    card.classList.remove('active-metric');
+                    badge.textContent = 'Ver en Mapa';
+                }
+            });
+        }
+
+        // Renderizar Mapa
+        function renderMap(fitToSelection = false) {
+            const { mapAgg, totalAgg } = getAggregatedData();
+            updateKPICards(totalAgg, mapAgg);
+
+            if (geojsonLayer) {
+                map.removeLayer(geojsonLayer);
+            }
+            labelsLayer.clearLayers();
+
+            const metricKey = state.metric;
+            const cfg = METRIC_CONFIG[metricKey];
+
+            // Valores para calcular umbrales dinámicos
+            const geoValues = Object.values(mapAgg)
+                .filter(d => d.key !== '-')
+                .map(d => d[metricKey]);
+            const thresholds = computeDynamicThresholds(geoValues, metricKey);
+
+            const sourceGeoJSON = state.geoLevel === 'comuna' ? window.COMUNAS_GEOJSON : window.BARRIOS_GEOJSON;
+            const filteredFeatures = sourceGeoJSON.features.filter(feat => {
+                if (state.comunaFilter === 'ALL') return true;
+                const c = state.geoLevel === 'comuna'
+                    ? String(Math.round(feat.properties.COMUNAS))
+                    : String(Math.round(feat.properties.comuna));
+                return c === String(state.comunaFilter);
+            });
+
+            const fc = { type: 'FeatureCollection', features: filteredFeatures };
+
+            geojsonLayer = L.geoJson(fc, {
+                style: function (feature) {
+                    const key = state.geoLevel === 'comuna'
+                        ? String(Math.round(feature.properties.COMUNAS))
+                        : feature.properties.barrio_norm;
+                    const entity = mapAgg[key];
+                    const val = entity ? entity[metricKey] : null;
+                    const isSelected = state.selectedEntityKey === key;
+                    return {
+                        fillColor: getColorForValue(val, thresholds, cfg.palette),
+                        weight: isSelected ? 3.5 : (state.geoLevel === 'comuna' ? 2 : 1.2),
+                        opacity: 1,
+                        color: isSelected ? '#FFB703' : '#FFFFFF',
+                        fillOpacity: isSelected ? 1 : 0.92
+                    };
+                },
+                onEachFeature: function (feature, layer) {
+                    const key = state.geoLevel === 'comuna'
+                        ? String(Math.round(feature.properties.COMUNAS))
+                        : feature.properties.barrio_norm;
+                    const entity = mapAgg[key];
+
+                    layer.on({
+                        mouseover: function (e) {
+                            const l = e.target;
+                            l.setStyle({
+                                weight: 3.5,
+                                color: '#FFB703',
+                                fillOpacity: 1
+                            });
+                            l.bringToFront();
+                            if (entity) infoControl.update(entity);
+                        },
+                        mouseout: function (e) {
+                            geojsonLayer.resetStyle(e.target);
+                            if (state.selectedEntityKey && mapAgg[state.selectedEntityKey]) {
+                                infoControl.update(mapAgg[state.selectedEntityKey]);
+                            } else {
+                                infoControl.update(null);
+                            }
+                        },
+                        click: function (e) {
+                            if (state.selectedEntityKey === key) {
+                                state.selectedEntityKey = null;
+                            } else {
+                                state.selectedEntityKey = key;
+                            }
+                            renderMap(false);
+                            renderTable();
+                        }
+                    });
+
+                    // Etiquetas sobre cada polígono
+                    if (document.getElementById('chkShowLabels').checked && entity) {
+                        const center = layer.getBounds().getCenter();
+                        let lat = center.lat;
+                        let lng = center.lng;
+
+                        if (state.geoLevel === 'comuna') {
+                            const cid = parseInt(key, 10);
+                            if (cid === 1) lng += 0.005;
+                            if (cid === 14) { lat -= 0.003; lng += 0.004; }
+                            if (cid === 8) lat += 0.003;
+                        }
+
+                        const val = entity[metricKey];
+                        const txtColor = getTextColorForBg(val, thresholds, metricKey);
+                        const labelHtml = state.geoLevel === 'comuna'
+                            ? `<div style="color:${txtColor}; font-weight:800; font-size:13px; text-shadow:0 1px 2px rgba(0,0,0,0.25);">C${key}<br><span style="font-size:11px; font-weight:700;">${fmtPct(val)}</span></div>`
+                            : `<div style="color:${txtColor}; font-weight:700; font-size:9.5px; text-shadow:0 1px 2px rgba(0,0,0,0.35);">${feature.properties.nombre}<br><span style="font-size:9px;">${fmtPct(val)}</span></div>`;
+
+                        L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                className: 'map-polygon-label',
+                                html: labelHtml,
+                                iconSize: [76, 30],
+                                iconAnchor: [38, 15]
+                            }),
+                            interactive: false
+                        }).addTo(labelsLayer);
+                    }
+                }
+            }).addTo(map);
+
+            if (fitToSelection && filteredFeatures.length > 0) {
+                map.fitBounds(geojsonLayer.getBounds(), { padding: [15, 15] });
+            }
+
+            // Actualizar panel info si hay entidad seleccionada
+            if (state.selectedEntityKey && mapAgg[state.selectedEntityKey]) {
+                infoControl.update(mapAgg[state.selectedEntityKey]);
+            } else {
+                infoControl.update(null);
+            }
+
+            // Actualizar leyenda
+            if (legendControl && legendControl._div) {
+                legendControl._div.innerHTML = `
+                    <div class="legend-title">${cfg.shortLabel}</div>
+                    <i style="background:${cfg.palette[0]}"></i> &le; ${fmtPct(thresholds[0])}<br>
+                    <i style="background:${cfg.palette[1]}"></i> ${fmtPct(thresholds[0])} – ${fmtPct(thresholds[1])}<br>
+                    <i style="background:${cfg.palette[2]}"></i> ${fmtPct(thresholds[1])} – ${fmtPct(thresholds[2])}<br>
+                    <i style="background:${cfg.palette[3]}"></i> &gt; ${fmtPct(thresholds[2])}
+                `;
+            }
+
+            const cuotaText = state.cuota === 'ALL' ? 'Todas las Cuotas (Acumulado)' : `Cuota ${state.cuota}`;
+            document.getElementById('mapPanelTitle').textContent =
+                `Mapa de ${cfg.label} — Por ${state.geoLevel === 'comuna' ? 'Comuna' : 'Barrio'}`;
+            document.getElementById('mapPanelSubtitle').textContent =
+                `${cuotaText} | Fórmula: ${cfg.formula}`;
+        }
+
+        // Renderizar Tabla Interactiva
+        function renderTable() {
+            const { mapAgg, totalAgg } = getAggregatedData();
+            const search = document.getElementById('searchInput').value.trim().toUpperCase();
+
+            document.getElementById('th_name').textContent =
+                state.geoLevel === 'comuna' ? 'Comuna ↕' : 'Barrio (Comuna) ↕';
+            document.getElementById('tablePanelTitle').textContent =
+                state.geoLevel === 'comuna' ? 'Detalle por Comuna (15)' : 'Detalle por Barrio (48)';
+
+            let list = Object.values(mapAgg).filter(item => {
+                if (!search) return true;
+                return item.title.toUpperCase().includes(search) ||
+                       item.subtitle.toUpperCase().includes(search);
+            });
+
+            list.sort((a, b) => {
+                if (a.key === '-') return 1;
+                if (b.key === '-') return -1;
+                let va, vb;
+                if (state.sortBy === 'name') {
+                    if (state.geoLevel === 'comuna') {
+                        va = parseInt(a.key, 10) || 999;
+                        vb = parseInt(b.key, 10) || 999;
+                    } else {
+                        va = a.title;
+                        vb = b.title;
+                    }
+                } else {
+                    va = a[state.sortBy];
+                    vb = b[state.sortBy];
+                }
+                if (va < vb) return state.sortDesc ? 1 : -1;
+                if (va > vb) return state.sortDesc ? -1 : 1;
+                return 0;
+            });
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = list.map(item => {
+                const isSel = state.selectedEntityKey === item.key;
+                const displayLabel = state.geoLevel === 'barrio' && item.comuna !== '-'
+                    ? `${item.title} <small style="color:var(--text-muted); font-weight:400;">(C${item.comuna})</small>`
+                    : item.title;
+
+                return `
+                    <tr class="${isSel ? 'selected-row' : ''}" onclick="selectEntityFromTable('${item.key}')">
+                        <td>${displayLabel}</td>
+                        <td><span class="pill-pct" style="background:#E6F2F3; color:#1E3A40;">${fmtPct(item.morosidad_importe)}</span></td>
+                        <td>${fmtPct(item.morosidad_cantidad)}</td>
+                        <td><span class="pill-pct" style="background:#E8F6F3; color:#1D6F5E;">${fmtPct(item.cumplimiento_importe)}</span></td>
+                        <td>${fmtPct(item.cumplimiento_cantidad)}</td>
+                        <td>${fmtInt.format(item.emision_cant)}</td>
+                        <td>${fmtInt.format(item.deuda_cant)}</td>
+                        <td>${formatMillonesARS(item.emision_imp)}</td>
+                        <td>${formatMillonesARS(item.deuda_nom)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const tfoot = document.getElementById('tableFoot');
+            tfoot.innerHTML = `
+                <tr>
+                    <td>TOTAL (${list.length} registros)</td>
+                    <td>${fmtPct(totalAgg.morosidad_importe)}</td>
+                    <td>${fmtPct(totalAgg.morosidad_cantidad)}</td>
+                    <td>${fmtPct(totalAgg.cumplimiento_importe)}</td>
+                    <td>${fmtPct(totalAgg.cumplimiento_cantidad)}</td>
+                    <td>${fmtInt.format(totalAgg.emision_cant)}</td>
+                    <td>${fmtInt.format(totalAgg.deuda_cant)}</td>
+                    <td>${formatMillonesARS(totalAgg.emision_imp)}</td>
+                    <td>${formatMillonesARS(totalAgg.deuda_nom)}</td>
+                </tr>
+            `;
+        }
+
+        function selectEntityFromTable(key) {
+            if (state.selectedEntityKey === key) {
+                state.selectedEntityKey = null;
+            } else {
+                state.selectedEntityKey = key;
+            }
+            renderMap(false);
+            renderTable();
+        }
+
+        function sortTable(field) {
+            if (state.sortBy === field) {
+                state.sortDesc = !state.sortDesc;
+            } else {
+                state.sortBy = field;
+                state.sortDesc = field !== 'name';
+            }
+            renderTable();
+        }
+
+        // Eventos de Controles
+        function setGeoLevel(level) {
+            state.geoLevel = level;
+            state.selectedEntityKey = null;
+            document.getElementById('btnViewComuna').classList.toggle('active', level === 'comuna');
+            document.getElementById('btnViewBarrio').classList.toggle('active', level === 'barrio');
+            renderMap(false);
+            renderTable();
+        }
+
+        function onMetricChange(metric) {
+            state.metric = metric;
+            document.getElementById('selectMetric').value = metric;
+            state.sortBy = metric;
+            state.sortDesc = true;
+            renderMap(false);
+            renderTable();
+        }
+
+        function onCuotaSelectChange(cuotaVal) {
+            state.cuota = cuotaVal;
+            document.getElementById('selectCuota').value = cuotaVal;
+            document.querySelectorAll('.cuota-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cuota === String(cuotaVal));
+            });
+            renderMap(false);
+            renderTable();
+        }
+
+        function onComunaFilterChange(comunaVal) {
+            state.comunaFilter = comunaVal;
+            state.selectedEntityKey = null;
+            renderMap(true);
+            renderTable();
+        }
+
+        function resetMapView() {
+            state.selectedEntityKey = null;
+            state.comunaFilter = 'ALL';
+            document.getElementById('selectComunaFilter').value = 'ALL';
+            renderMap(true);
+            renderTable();
+        }
+
+        // Control de disposición y tamaño del mapa (Máximo espacio)
+        function setMapLayout(mode) {
+            const grid = document.getElementById('workspaceGrid');
+            const btnFull = document.getElementById('btnLayoutFull');
+            const btnSplit = document.getElementById('btnLayoutSplit');
+            if (mode === 'split') {
+                grid.classList.add('split-mode');
+                btnSplit.classList.add('active');
+                btnFull.classList.remove('active');
+            } else {
+                grid.classList.remove('split-mode');
+                btnFull.classList.add('active');
+                btnSplit.classList.remove('active');
+            }
+            setTimeout(() => {
+                map.invalidateSize();
+                if (geojsonLayer) map.fitBounds(geojsonLayer.getBounds(), { padding: [20, 20] });
+            }, 180);
+        }
+
+        function setMapHeight(px) {
+            const mapEl = document.getElementById('map');
+            mapEl.style.height = px + 'px';
+            document.querySelectorAll('.btn-height').forEach(b => {
+                b.classList.toggle('active', b.dataset.height === String(px));
+            });
+            setTimeout(() => {
+                map.invalidateSize();
+                if (geojsonLayer) map.fitBounds(geojsonLayer.getBounds(), { padding: [20, 20] });
+            }, 180);
+        }
+
+        function toggleFullscreenMap() {
+            const card = document.getElementById('mapCard');
+            const btn = document.getElementById('btnFullscreenMap');
+            card.classList.toggle('map-fullscreen');
+            const isFull = card.classList.contains('map-fullscreen');
+            btn.innerHTML = isFull ? '✕ Salir Pantalla Completa' : '⛶ Pantalla Completa';
+            btn.style.background = isFull ? 'var(--accent)' : '#EBF0F2';
+            btn.style.color = isFull ? '#1B2C30' : 'var(--primary-dark)';
+            setTimeout(() => {
+                map.invalidateSize();
+                if (geojsonLayer) map.fitBounds(geojsonLayer.getBounds(), { padding: [35, 35] });
+            }, 180);
+        }
+
+        // Salir de pantalla completa con la tecla Escape
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const card = document.getElementById('mapCard');
+                if (card && card.classList.contains('map-fullscreen')) {
+                    toggleFullscreenMap();
+                }
+            }
+        });
+
+        // Poblar Selectores de Cuota y Comuna dinámicamente según el archivo cargado
+        function populateFilters() {
+            const cuotasSet = new Set();
+            const comunasSet = new Set();
+
+            rawRows.forEach(r => {
+                if (r.cuota !== undefined && r.cuota !== '') cuotasSet.add(r.cuota);
+                if (r.comuna && r.comuna !== '-') comunasSet.add(parseInt(r.comuna, 10));
+            });
+
+            const sortedCuotas = Array.from(cuotasSet).sort((a, b) => a - b);
+            const sortedComunas = Array.from(comunasSet).sort((a, b) => a - b);
+
+            const selCuota = document.getElementById('selectCuota');
+            selCuota.innerHTML = '<option value="ALL">Todas las Cuotas (Acumulado)</option>' +
+                sortedCuotas.map(c => `<option value="${c}">Cuota ${c}</option>`).join('');
+
+            const pillContainer = document.getElementById('cuotasPillContainer');
+            pillContainer.innerHTML = '<span class="cuotas-bar-label">Cuota:</span>' +
+                `<button class="cuota-pill active" data-cuota="ALL" onclick="onCuotaSelectChange('ALL')">Todas (Acum.)</button>` +
+                sortedCuotas.map(c => `<button class="cuota-pill" data-cuota="${c}" onclick="onCuotaSelectChange('${c}')">Cuota ${c}</button>`).join('');
+
+            const selComuna = document.getElementById('selectComunaFilter');
+            selComuna.innerHTML = '<option value="ALL">Todas las Comunas (CABA completa)</option>' +
+                sortedComunas.map(c => `<option value="${c}">Comuna ${c}</option>`).join('');
+        }
+
+        function applyNewCSVText(csvText, sourceLabel) {
+            const parsed = parseCSVText(csvText);
+            if (!parsed || parsed.length === 0) {
+                console.error('No se pudieron leer filas válidas del archivo CSV.');
+                return false;
+            }
+            rawRows = parsed;
+            currentCSVText = csvText;
+            state.cuota = 'ALL';
+            state.comunaFilter = 'ALL';
+            state.selectedEntityKey = null;
+            populateFilters();
+            renderMap(true);
+            renderTable();
+            document.getElementById('dataSourceBadge').textContent = `📊 Datos: ${sourceLabel} (${parsed.length} filas)`;
+            return true;
+        }
+
+        // Carga automática de datos: lee datos.csv directamente desde el repositorio de GitHub
+        window.addEventListener('DOMContentLoaded', async () => {
+            initMap();
+
+            let loaded = false;
+            // 1. Si está alojado en GitHub Pages (http/https), lee el archivo datos.csv actualizado del repositorio
+            if (window.location.protocol.startsWith('http')) {
+                try {
+                    const resp = await fetch('datos.csv?t=' + Date.now(), { cache: 'no-store' });
+                    if (resp.ok) {
+                        const text = await resp.text();
+                        if (text && text.includes('Cuota')) {
+                            applyNewCSVText(text, 'datos.csv (GitHub)');
+                            loaded = true;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Fallback a bundle embebido:', e);
+                }
+            }
+
+            // 2. Si corre de forma local (file://) o si el fetch falla, usa los datos base embebidos
+            if (!loaded && window.DEFAULT_CSV_TEXT) {
+                applyNewCSVText(window.DEFAULT_CSV_TEXT, 'datos.csv (Base Oficial 2026)');
+            }
+        });
+    </script>
+</body>
+</html>
